@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RentOut — Leasing Operations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div>
+          <h1 class="brand">RentOut</h1>
+          <p class="brand-sub">Leasing agents · Renters</p>
+        </div>
+        <nav class="nav" aria-label="Primary">
+          <a class="is-active" href="#ops">Operations</a>
+          <a href="#market">Market</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#seo">SEO</a>
+        </nav>
+        <div>
+          <p class="label-sm">Session</p>
+          <p class="metric-sub" id="gen-at">—</p>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="toolbar">
+          <button type="button" class="btn-primary" id="btn-refresh">Refresh data</button>
+          <span class="pill mono" id="main-loader" hidden>Loading consolidated API…</span>
+        </div>
+
+        <div class="error-banner" id="error-banner" role="alert" hidden></div>
+
+        <section id="ops" style="margin-bottom: 56px">
+          <h2 class="section-head">Property &amp; internal data</h2>
+          <p class="metric-sub" style="margin: -12px 0 24px; max-width: 720px">
+            Assets, units, maintenance snapshots, and lease terms stored in SQLite — ready to sync from Yardi, AppFolio, or
+            Buildium via your PMS connectors.
+          </p>
+
+          <div class="table-wrap card" style="margin-bottom: 24px; padding: 0">
+            <table>
+              <thead>
+                <tr>
+                  <th>Asset ID</th>
+                  <th>Name</th>
+                  <th>Class</th>
+                  <th>Year</th>
+                  <th>Units</th>
+                  <th>Open tickets</th>
+                  <th>Damages</th>
+                </tr>
+              </thead>
+              <tbody id="assets-body"></tbody>
+            </table>
+          </div>
+
+          <div class="grid grid-2" style="margin-bottom: 24px">
+            <div class="table-wrap card" style="padding: 0">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Unit</th>
+                    <th>Keys</th>
+                    <th>Health</th>
+                    <th>Archive</th>
+                  </tr>
+                </thead>
+                <tbody id="units-body"></tbody>
+              </table>
+            </div>
+            <div class="table-wrap card" style="padding: 0">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Unit</th>
+                    <th>Prior tenant</th>
+                    <th>Tenant ID</th>
+                    <th>Ended</th>
+                    <th>Months</th>
+                    <th>Rent schedule</th>
+                  </tr>
+                </thead>
+                <tbody id="leases-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="market" style="margin-bottom: 56px">
+          <h2 class="section-head">Comps · valuation · demographics</h2>
+          <div class="grid grid-3" style="margin-bottom: 24px">
+            <div class="card">
+              <p class="label-sm">Market average rent</p>
+              <p class="metric mono" id="m-rent">—</p>
+              <p class="metric-sub" id="m-src"></p>
+            </div>
+            <div class="card">
+              <p class="label-sm">Occupancy average</p>
+              <p class="metric mono" id="m-occ">—</p>
+              <p class="metric-sub">Submarket</p>
+              <p class="metric-sub" id="m-sub">—</p>
+            </div>
+            <div class="card">
+              <p class="label-sm">Market heat score</p>
+              <p class="metric mono" id="m-heat">—</p>
+              <p class="metric-sub">RentCast when API key set; else seeded mock.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-3">
+            <div class="card card--inset">
+              <p class="label-sm">Radius (miles)</p>
+              <p class="metric mono" id="d-rad">—</p>
+            </div>
+            <div class="card card--inset">
+              <p class="label-sm">Average HHI</p>
+              <p class="metric mono" id="d-hhi">—</p>
+              <p class="metric-sub" id="d-place"></p>
+            </div>
+            <div class="card card--inset">
+              <p class="label-sm">Vacancy rate</p>
+              <p class="metric mono" id="d-vac">—</p>
+              <p class="metric-sub">US Census ACS (Denver place default)</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="workflow" style="margin-bottom: 56px">
+          <h2 class="section-head">Background jobs &amp; system health</h2>
+          <div class="grid grid-2" style="margin-bottom: 24px">
+            <div id="jobs-host" class="grid" style="gap: 16px"></div>
+            <div class="card">
+              <p class="label-sm">Cache health</p>
+              <div class="cache-row" style="margin-top: 16px">
+                <div>
+                  <p class="label-sm">L1</p>
+                  <p class="metric mono" style="font-size: 1.25rem" id="c-l1">—</p>
+                </div>
+                <div>
+                  <p class="label-sm">L2</p>
+                  <p class="metric mono" style="font-size: 1.25rem" id="c-l2">—</p>
+                </div>
+                <div>
+                  <p class="label-sm">L3</p>
+                  <p class="metric mono" style="font-size: 1.25rem" id="c-l3">—</p>
+                </div>
+              </div>
+              <p class="metric-sub" style="margin-top: 24px">Memory <span class="mono" id="c-mem">—</span></p>
+            </div>
+          </div>
+        </section>
+
+        <section id="seo">
+          <h2 class="section-head">SEO &amp; distribution</h2>
+          <p class="metric-sub" style="margin: -12px 0 24px; max-width: 720px">
+            Channel scores and keyword clusters — wire to Google Analytics / Search Console or ListHub syndication feeds to
+            replace static rows.
+          </p>
+          <div class="grid grid-3" id="seo-host"></div>
+        </section>
+      </main>
+    </div>
+    <script src="/js/app.js" defer></script>
+  </body>
+</html>

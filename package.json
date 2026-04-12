@@ -1,0 +1,21 @@
+{
+  "name": "rentout",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "RentOut — leasing ops dashboard with internal DB and external market/demographic feeds",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "seed": "node server/seed.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}

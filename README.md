@@ -1,105 +1,191 @@
 # RentOut
 
-Leasing operations dashboard for **leasing agents** and **renters**: property and unit data, maintenance and lease terms, market analytics, demographics, background job status, cache health, and SEO distribution metrics. The server exposes a **single consolidated JSON** endpoint that the static HTML client consumes.
+RentOut is a leasing operations suite for internal property, leasing, and screening teams. The app now stands on four operational layers:
 
-## Features
+- operator auth and session management
+- property operations
+- CRM pipeline
+- applicant screening
 
-| Area | Description |
-|------|-------------|
-| **Property management** | Assets, units, open tickets / damages, lease history (schedules, clauses, parking, storage). |
-| **Market analytics** | Average rent, occupancy, heat score, submarket identifiers — backed by seeded data and optional [RentCast](https://www.rentcast.io/) API. |
-| **Demographics** | Radius, median household income, vacancy rate — [US Census ACS](https://www.census.gov/data/developers/data-sets/acs-5year.html) with graceful fallback. |
-| **Workflow** | Job name, step (e.g. 4/6), status (Running / Queued / Partial), neural and CPU load proxies. |
-| **System health** | L1 / L2 / L3 cache percentages and memory usage (populate from your workers or metrics agent). |
-| **SEO & distribution** | Per-channel local SEO score, distribution %, listing completeness, keyword clusters (ready to wire to GA, GSC, or ListHub). |
+It runs as a single Express service with a static dashboard. Local development can use SQLite. Render production should use Postgres through `DATABASE_URL`.
 
-The UI follows the **Industrial Precision & Retro-Futurism** design system (Space Grotesk + Inter, dark surfaces, kinetic orange accents, 0px radius). Align custom pages with your project’s `DESIGNMASTER.md` if you maintain one alongside this repo.
+## What is implemented
 
-## Tech stack
+- operator accounts with roles
+- password-based login
+- TOTP MFA enrollment and step-up verification
+- recovery-code based fallback sign-in
+- HTTP-only session cookies
+- audit logs for login/logout and all write routes
+- property portfolio, units, leases, and work orders
+- CRM prospects, stage movement, and next actions
+- screening policies and applications with stored decisions
+- dual database runtime:
+  - SQLite for local dev
+  - Postgres for production
+- Render blueprint in `render.yaml`
 
-- **Runtime:** Node.js 18+
-- **Server:** Express
-- **Database:** SQLite (`better-sqlite3`), file under `data/rentout.sqlite` — schema can be ported to PostgreSQL or MongoDB for production scale and PMS sync.
+## Operator model
 
-## Quick start
+Roles:
+
+- `viewer`: read-only access
+- `operator`: read and write access
+- `admin`: read, write, and operator-admin access
+
+Bootstrap:
+
+- On first startup, if no operators exist, the app requires:
+  - `OPERATOR_BOOTSTRAP_EMAIL`
+  - `OPERATOR_BOOTSTRAP_PASSWORD`
+- That bootstrap operator is created as `admin`.
+
+Session model:
+
+- Login uses email and password.
+- MFA-enabled operators complete login with an authenticator code or a one-time recovery code.
+- Session state is stored in `auth_sessions`.
+- One-time MFA challenges are stored in `auth_login_challenges`.
+- The browser uses an HTTP-only cookie named `rentout_session`.
+- Session expiry is controlled by `SESSION_TTL_DAYS`.
+
+Audit logging:
+
+- Auth events are logged:
+  - login
+  - logout
+- All write routes are logged with:
+  - operator id
+  - action
+  - entity type
+  - entity id
+  - request id
+  - IP and user agent
+  - sanitized request payload
+
+## Local development
 
 ```bash
-cd RentOut
+git clone https://github.com/robs46859-eng/rentout.git
+cd rentout
 npm install
-cp .env.example .env   # optional: add API keys
+cp .env.example .env
 npm run seed
+OPERATOR_BOOTSTRAP_EMAIL=admin@rentout.local \
+OPERATOR_BOOTSTRAP_PASSWORD='change-this-now' \
 npm start
 ```
 
-Open **http://127.0.0.1:3847** (or the host/port you set). Use `npm run dev` for a watched server process.
+Open `http://127.0.0.1:3847` and sign in with the bootstrap operator.
 
-## Environment variables
+`npm run seed` resets operational demo data. It does not create operator accounts.
 
-Copy `.env.example` to `.env`. Common variables:
+## Environment
 
 | Variable | Purpose |
-|----------|---------|
-| `PORT` | HTTP port (default `3847`). |
-| `SQLITE_PATH` | Optional absolute path to the SQLite file. |
-| `RENTCAST_API_KEY` | Enables live market pulls from RentCast; without it, market fields use seed/mock values. |
-| `EXTERNAL_REAL_ESTATE_PROVIDER` | Reserved label for switching providers (e.g. ATTOM, CoreLogic). |
-| `CENSUS_API_KEY` | Optional; improves Census API rate limits. Many ACS requests work without a key. |
-| `MARKET_ZIP` | ZIP used when querying RentCast. |
-| `MARKET_STATE_FIPS` | Two-digit state FIPS (e.g. `08` for Colorado). |
-| `MARKET_PLACE` | Place FIPS for Census place geography (default targets Denver; adjust for your market). |
-| `DEMO_RADIUS_MILES` | Display radius for demographic summary. |
+| --- | --- |
+| `PORT` | HTTP port. Default `3847`. |
+| `HOST` | Bind host. Use `127.0.0.1` locally, `0.0.0.0` in containers. |
+| `DATABASE_URL` | Production Postgres connection string. When set, the app uses Postgres instead of SQLite. |
+| `PGSSL` | Set `true` if your Postgres connection requires SSL. |
+| `SQLITE_PATH` | Optional SQLite file path for local/dev runtime. |
+| `SESSION_TTL_DAYS` | Session duration in days. Default `14`. |
+| `MFA_ISSUER` | Label shown in authenticator apps. Default `RentOut`. |
+| `MFA_CHALLENGE_TTL_MINUTES` | MFA challenge lifetime. Default `10`. |
+| `OPERATOR_BOOTSTRAP_EMAIL` | Required on first startup when no operators exist. |
+| `OPERATOR_BOOTSTRAP_PASSWORD` | Required on first startup when no operators exist. |
+| `OPERATOR_BOOTSTRAP_NAME` | Optional display name for the bootstrap admin. |
+| `RENTCAST_API_KEY` | Enables live average-rent pulls. |
+| `CENSUS_API_KEY` | Optional Census key for higher ACS reliability. |
+| `MARKET_ZIP` | ZIP used for RentCast rent lookup. |
+| `MARKET_STATE_FIPS` | Census state FIPS code. |
+| `MARKET_PLACE` | Census place FIPS code. |
+| `DEMO_RADIUS_MILES` | Radius displayed in demographics. |
 
-Adjust `server/services/market.js` if your RentCast product uses different endpoints or parameters.
+## Product surface
+
+### Dashboard
+
+- Operations: portfolio summary, unit readiness, leases, work orders
+- CRM: funnel counts, active prospects, next actions
+- Screening: policy thresholds, applications, decision reasons
+- Market: average rent, occupancy proxy, heat score, geography
+- Workflow: job state and cache/system health
+- SEO: listing-channel scorecards and keyword clusters
+
+### Core entities
+
+- `operators`
+- `auth_sessions`
+- `auth_login_challenges`
+- `audit_logs`
+- `assets`
+- `units`
+- `maintenance_snapshots`
+- `leases`
+- `work_orders`
+- `crm_prospects`
+- `crm_activities`
+- `screening_policies`
+- `screening_applications`
+- `workflow_jobs`
+- `cache_health`
+- `seo_channels`
+- `market_snapshots`
+- `demographic_snapshots`
 
 ## API
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/health` | Liveness: `{ ok, service, time }`. |
-| `GET` | `/api/v1/consolidated` | Full dashboard payload: property management, merged market + demographics, workflow, cache, SEO. |
+| Method | Path | Purpose | Minimum role |
+| --- | --- | --- | --- |
+| `GET` | `/api/health` | Liveness probe | public |
+| `POST` | `/api/auth/login` | Start operator session | public |
+| `POST` | `/api/auth/mfa/verify` | Complete MFA challenge and issue session | public |
+| `POST` | `/api/auth/logout` | End operator session | authenticated |
+| `GET` | `/api/session` | Validate current operator session | authenticated |
+| `POST` | `/api/v1/account/password/change` | Rotate current operator password | viewer |
+| `POST` | `/api/v1/account/mfa/setup` | Start MFA enrollment and issue recovery codes | viewer |
+| `POST` | `/api/v1/account/mfa/verify` | Confirm MFA enrollment | viewer |
+| `POST` | `/api/v1/account/mfa/disable` | Disable MFA after password and MFA verification | viewer |
+| `GET` | `/api/v1/consolidated` | Full dashboard payload | viewer |
+| `GET` | `/api/v1/property/portfolio` | Property-management snapshot | viewer |
+| `POST` | `/api/v1/property/work-orders` | Create a work order | operator |
+| `PATCH` | `/api/v1/property/work-orders/:id` | Update work order | operator |
+| `GET` | `/api/v1/crm/pipeline` | CRM pipeline snapshot | viewer |
+| `POST` | `/api/v1/crm/prospects` | Create a prospect | operator |
+| `POST` | `/api/v1/crm/prospects/:id/activities` | Log or schedule activity | operator |
+| `PATCH` | `/api/v1/crm/prospects/:id/stage` | Move a prospect through funnel | operator |
+| `GET` | `/api/v1/screening/overview` | Screening policy and application view | viewer |
+| `POST` | `/api/v1/screening/applications` | Create screening application | operator |
+| `PATCH` | `/api/v1/screening/applications/:id/decision` | Record screening decision | operator |
+| `GET` | `/api/v1/admin/operators` | List operators | admin |
+| `POST` | `/api/v1/admin/operators` | Create operator | admin |
+| `PATCH` | `/api/v1/admin/operators/:id` | Update operator access and active state | admin |
+| `POST` | `/api/v1/admin/operators/:id/reset-password` | Reset operator password and optionally clear MFA | admin |
+| `GET` | `/api/v1/admin/audit-logs` | Read audit trail | admin |
 
-Example:
+## Render deployment
 
-```bash
-curl -s http://127.0.0.1:3847/api/v1/consolidated | jq .
-```
+This repo includes `render.yaml` for:
 
-## Project layout
+- one Node web service
+- one managed Postgres database
+- injected `DATABASE_URL`
+- bootstrap operator secrets
 
-```
-RentOut/
-├── .env.example
-├── package.json
-├── server/
-│   ├── index.js              # Express app, static files, routes
-│   ├── db.js                 # SQLite connection + migrations
-│   ├── seed.js               # Sample data
-│   └── services/
-│       ├── consolidated.js   # Builds merged JSON response
-│       ├── market.js         # RentCast / fallback
-│       └── demographics.js   # Census ACS / fallback
-├── public/
-│   ├── index.html
-│   ├── css/app.css
-│   └── js/app.js
-└── data/                     # Created at runtime (gitignored)
-    └── rentout.sqlite
-```
+Recommended Render setup:
 
-## Integrating external systems
+1. Create the Render blueprint from this repo.
+2. Let Render provision the Postgres database.
+3. Set:
+   - `OPERATOR_BOOTSTRAP_EMAIL`
+   - `OPERATOR_BOOTSTRAP_PASSWORD`
+   - `MFA_ISSUER`
+4. Keep `HOST=0.0.0.0`.
+5. Use Postgres in production. Do not run Render on SQLite.
 
-- **PMS (Yardi, AppFolio, Buildium):** Map sync jobs to `assets`, `units`, `maintenance_snapshots`, and `leases` — no API routes are included for writes; add authenticated POST/PATCH handlers or a separate worker.
-- **Task queues (Celery, Bull, SQS):** Replace or augment `workflow_jobs` and `cache_health` rows with real queue depth, step state, and host metrics.
-- **Analytics / SEO:** Replace `seo_channels` seed data with periodic jobs that call Google Analytics, Search Console, or syndication partners.
+## Notes
 
-## Scripts
-
-| Script | Command |
-|--------|---------|
-| Start | `npm start` |
-| Dev (watch) | `npm run dev` |
-| Reseed database | `npm run seed` |
-
-## License
-
-Private / unpublished unless you add a license file.
+- `docs/launch-audit.md` captures the current suite audit.
+- This is now a real internal operator auth model with MFA, recovery codes, password rotation, and audited admin controls.
+- It still does not provide customer-facing tenant auth, PMS sync, or external screening vendor integration.

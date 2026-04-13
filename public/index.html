@@ -13,6 +13,38 @@
     <link rel="stylesheet" href="/css/app.css" />
   </head>
   <body>
+    <div class="auth-gate" id="auth-gate">
+      <div class="auth-card">
+        <p class="label-sm">Operator authentication</p>
+        <h2 class="metric" style="font-size: 1.5rem; margin-bottom: 12px">Sign in</h2>
+        <p class="metric-sub" style="margin-bottom: 20px">
+          Use an operator account with a role-based session. The app stores the session in an HTTP-only cookie.
+        </p>
+        <div id="auth-login-panel">
+          <label class="label-sm" for="auth-email">Email</label>
+          <input id="auth-email" class="auth-input" type="email" autocomplete="username" spellcheck="false" />
+          <label class="label-sm" for="auth-password" style="margin-top: 14px; display: block">Password</label>
+          <input id="auth-password" class="auth-input" type="password" autocomplete="current-password" spellcheck="false" />
+          <div class="toolbar" style="margin: 20px 0 0">
+            <button type="button" class="btn-primary" id="btn-auth-login">Sign in</button>
+          </div>
+        </div>
+        <div id="auth-mfa-panel" hidden>
+          <p class="label-sm">Step-up verification</p>
+          <p class="metric-sub" id="auth-mfa-message" style="margin-bottom: 16px">
+            Enter the 6-digit authenticator code or a recovery code to complete sign in.
+          </p>
+          <label class="label-sm" for="auth-mfa-code">Authenticator or recovery code</label>
+          <input id="auth-mfa-code" class="auth-input" type="text" inputmode="numeric" autocomplete="one-time-code" spellcheck="false" />
+          <div class="toolbar" style="margin: 20px 0 0">
+            <button type="button" class="btn-primary" id="btn-auth-mfa-verify">Verify</button>
+            <button type="button" class="btn-secondary" id="btn-auth-back">Back</button>
+          </div>
+        </div>
+        <div class="error-banner" id="auth-error" role="alert" hidden></div>
+      </div>
+    </div>
+
     <div class="app-shell">
       <aside class="sidebar">
         <div>
@@ -21,13 +53,20 @@
         </div>
         <nav class="nav" aria-label="Primary">
           <a class="is-active" href="#ops">Operations</a>
+          <a href="#crm">CRM</a>
+          <a href="#screening">Screening</a>
+          <a href="#account">Account</a>
+          <a href="#admin" id="nav-admin-link" hidden>Admin</a>
           <a href="#market">Market</a>
           <a href="#workflow">Workflow</a>
           <a href="#seo">SEO</a>
         </nav>
         <div>
           <p class="label-sm">Session</p>
+          <p class="metric-sub" id="auth-actor">Locked</p>
+          <p class="metric-sub" id="auth-security">MFA unavailable</p>
           <p class="metric-sub" id="gen-at">—</p>
+          <button type="button" class="btn-secondary" id="btn-logout" style="margin-top: 12px">Sign out</button>
         </div>
       </aside>
 
@@ -52,11 +91,12 @@
                 <tr>
                   <th>Asset ID</th>
                   <th>Name</th>
+                  <th>Manager</th>
                   <th>Class</th>
-                  <th>Year</th>
                   <th>Units</th>
-                  <th>Open tickets</th>
-                  <th>Damages</th>
+                  <th>Occupied</th>
+                  <th>Vacant</th>
+                  <th>Work orders</th>
                 </tr>
               </thead>
               <tbody id="assets-body"></tbody>
@@ -70,9 +110,11 @@
                   <tr>
                     <th>Asset</th>
                     <th>Unit</th>
+                    <th>Status</th>
+                    <th>Bed/Bath</th>
+                    <th>Market rent</th>
                     <th>Keys</th>
-                    <th>Health</th>
-                    <th>Archive</th>
+                    <th>Make ready</th>
                   </tr>
                 </thead>
                 <tbody id="units-body"></tbody>
@@ -84,15 +126,233 @@
                   <tr>
                     <th>Unit</th>
                     <th>Prior tenant</th>
-                    <th>Tenant ID</th>
                     <th>Ended</th>
-                    <th>Months</th>
-                    <th>Rent schedule</th>
+                    <th>Monthly rent</th>
+                    <th>Deposit</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody id="leases-body"></tbody>
               </table>
             </div>
+          </div>
+
+          <div class="table-wrap card" style="padding: 0">
+            <table>
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th>Unit</th>
+                  <th>Work order</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Assigned</th>
+                  <th>Due</th>
+                </tr>
+              </thead>
+              <tbody id="work-orders-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="crm" style="margin-bottom: 56px">
+          <h2 class="section-head">CRM pipeline &amp; next actions</h2>
+          <p class="metric-sub" style="margin: -12px 0 24px; max-width: 760px">
+            Launch-facing leasing workflow: inquiry intake, qualification, tour scheduling, application review, approval, and
+            lease follow-up. Data is stored in SQLite and exposed through CRM write routes for intake automations or operator tools.
+          </p>
+
+          <div class="grid grid-4" id="crm-stage-host" style="margin-bottom: 24px"></div>
+
+          <div class="grid grid-2" style="margin-bottom: 24px">
+            <div class="table-wrap card" style="padding: 0">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Prospect</th>
+                    <th>Stage</th>
+                    <th>Unit target</th>
+                    <th>Budget</th>
+                    <th>Agent</th>
+                    <th>Next step</th>
+                  </tr>
+                </thead>
+                <tbody id="crm-prospects-body"></tbody>
+              </table>
+            </div>
+
+            <div class="card">
+              <p class="label-sm">Next actions</p>
+              <div id="crm-actions-host" class="stack-list" style="margin-top: 16px"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="screening" style="margin-bottom: 56px">
+          <h2 class="section-head">Screening policy &amp; applicant review</h2>
+          <p class="metric-sub" style="margin: -12px 0 24px; max-width: 760px">
+            Policy-driven applicant decisions for launch: credit floor, income-to-rent ratio, collections tolerance, identity
+            verification, and decision reasons stored in the database.
+          </p>
+
+          <div class="grid grid-4" id="screening-summary-host" style="margin-bottom: 24px"></div>
+
+          <div class="grid grid-2" style="margin-bottom: 24px">
+            <div class="table-wrap card" style="padding: 0">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Policy</th>
+                    <th>Credit min</th>
+                    <th>Income ratio</th>
+                    <th>Collections max</th>
+                    <th>Identity</th>
+                  </tr>
+                </thead>
+                <tbody id="screening-policies-body"></tbody>
+              </table>
+            </div>
+
+            <div class="table-wrap card" style="padding: 0">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Applicant</th>
+                    <th>Unit</th>
+                    <th>Decision</th>
+                    <th>Credit</th>
+                    <th>Income</th>
+                    <th>Reasons</th>
+                  </tr>
+                </thead>
+                <tbody id="screening-applications-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="account" style="margin-bottom: 56px">
+          <h2 class="section-head">Account security</h2>
+          <p class="metric-sub" style="margin: -12px 0 24px; max-width: 760px">
+            Operator sessions, MFA enrollment, recovery codes, and password rotation for production access control.
+          </p>
+
+          <div class="grid grid-2" style="margin-bottom: 24px">
+            <div class="card">
+              <p class="label-sm">Multi-factor authentication</p>
+              <p class="metric-sub" id="mfa-status-text">Checking MFA status…</p>
+              <div class="toolbar" style="margin-top: 20px">
+                <button type="button" class="btn-primary" id="btn-mfa-setup">Start MFA setup</button>
+              </div>
+
+              <div id="mfa-setup-panel" hidden style="margin-top: 20px">
+                <p class="label-sm">Setup secret</p>
+                <p class="metric-sub mono" id="mfa-secret">—</p>
+                <p class="metric-sub" style="margin-top: 16px">Authenticator URI</p>
+                <p class="metric-sub mono" id="mfa-uri" style="word-break: break-all">—</p>
+                <p class="metric-sub" style="margin-top: 16px">Recovery codes</p>
+                <pre class="secret-block" id="mfa-recovery-codes">—</pre>
+                <label class="label-sm" for="mfa-verify-code">Verification code</label>
+                <input id="mfa-verify-code" class="auth-input" type="text" inputmode="numeric" spellcheck="false" />
+                <div class="toolbar" style="margin-top: 16px">
+                  <button type="button" class="btn-primary" id="btn-mfa-verify-setup">Enable MFA</button>
+                </div>
+              </div>
+
+              <div id="mfa-disable-panel" style="margin-top: 24px" hidden>
+                <p class="label-sm">Disable MFA</p>
+                <label class="label-sm" for="mfa-disable-password">Current password</label>
+                <input id="mfa-disable-password" class="auth-input" type="password" autocomplete="current-password" spellcheck="false" />
+                <label class="label-sm" for="mfa-disable-code" style="margin-top: 14px; display: block">Authenticator or recovery code</label>
+                <input id="mfa-disable-code" class="auth-input" type="text" inputmode="numeric" spellcheck="false" />
+                <div class="toolbar" style="margin-top: 16px">
+                  <button type="button" class="btn-secondary" id="btn-mfa-disable">Disable MFA</button>
+                </div>
+              </div>
+              <div class="error-banner" id="account-mfa-error" role="alert" hidden></div>
+            </div>
+
+            <div class="card">
+              <p class="label-sm">Change password</p>
+              <label class="label-sm" for="account-current-password">Current password</label>
+              <input id="account-current-password" class="auth-input" type="password" autocomplete="current-password" spellcheck="false" />
+              <label class="label-sm" for="account-new-password" style="margin-top: 14px; display: block">New password</label>
+              <input id="account-new-password" class="auth-input" type="password" autocomplete="new-password" spellcheck="false" />
+              <label class="label-sm" for="account-mfa-code" style="margin-top: 14px; display: block">MFA code when enabled</label>
+              <input id="account-mfa-code" class="auth-input" type="text" inputmode="numeric" spellcheck="false" />
+              <div class="toolbar" style="margin-top: 20px">
+                <button type="button" class="btn-primary" id="btn-password-change">Update password</button>
+              </div>
+              <div class="error-banner" id="account-password-error" role="alert" hidden></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="admin" style="margin-bottom: 56px" hidden>
+          <h2 class="section-head">Admin controls</h2>
+          <p class="metric-sub" style="margin: -12px 0 24px; max-width: 760px">
+            Operator lifecycle, access posture, and audit review for the full internal leasing suite.
+          </p>
+
+          <div class="grid grid-2" style="margin-bottom: 24px">
+            <div class="card">
+              <p class="label-sm">Create operator</p>
+              <label class="label-sm" for="admin-create-name">Full name</label>
+              <input id="admin-create-name" class="auth-input" type="text" spellcheck="false" />
+              <label class="label-sm" for="admin-create-email" style="margin-top: 14px; display: block">Email</label>
+              <input id="admin-create-email" class="auth-input" type="email" spellcheck="false" />
+              <label class="label-sm" for="admin-create-role" style="margin-top: 14px; display: block">Role</label>
+              <select id="admin-create-role" class="auth-input">
+                <option value="viewer">viewer</option>
+                <option value="operator" selected>operator</option>
+                <option value="admin">admin</option>
+              </select>
+              <label class="label-sm" for="admin-create-password" style="margin-top: 14px; display: block">Initial password</label>
+              <input id="admin-create-password" class="auth-input" type="password" autocomplete="new-password" spellcheck="false" />
+              <div class="toolbar" style="margin-top: 20px">
+                <button type="button" class="btn-primary" id="btn-admin-create-operator">Create operator</button>
+              </div>
+              <div class="error-banner" id="admin-operator-error" role="alert" hidden></div>
+            </div>
+
+            <div class="card">
+              <p class="label-sm">Audit log stream</p>
+              <div class="toolbar" style="margin: 16px 0 0">
+                <button type="button" class="btn-secondary" id="btn-admin-refresh-audit">Refresh audit</button>
+              </div>
+              <div class="table-wrap" style="margin-top: 16px">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>When</th>
+                      <th>Operator</th>
+                      <th>Action</th>
+                      <th>Entity</th>
+                      <th>Payload</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-audit-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrap card" style="padding: 0">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>MFA</th>
+                  <th>Last login</th>
+                  <th>Password changed</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-operators-body"></tbody>
+            </table>
           </div>
         </section>
 

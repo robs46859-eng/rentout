@@ -1,75 +1,34 @@
-import { db } from "../db.js";
-import { fetchMarketAnalytics } from "./market.js";
+import { queryAll, queryOne } from "../db.js";
+import { listCrmPipeline } from "./crm.js";
 import { fetchDemographics } from "./demographics.js";
-
-function parseJsonSafe(s) {
-  if (s == null || s === "") return null;
-  try {
-    return JSON.parse(s);
-  } catch {
-    return s;
-  }
-}
+import { fetchMarketAnalytics } from "./market.js";
+import { listPropertyManagement } from "./property.js";
+import { listScreeningOverview } from "./screening.js";
 
 export async function buildConsolidatedResponse(env) {
-  const assets = db
-    .prepare(
-      `
-    SELECT a.*,
-      (SELECT open_tickets FROM maintenance_snapshots m WHERE m.asset_id = a.id ORDER BY m.recorded_at DESC LIMIT 1) AS open_tickets,
-      (SELECT unresolved_damages FROM maintenance_snapshots m WHERE m.asset_id = a.id ORDER BY m.recorded_at DESC LIMIT 1) AS unresolved_damages
-    FROM assets a ORDER BY a.asset_id
-  `,
-    )
-    .all();
+  const propertyManagement = await listPropertyManagement();
 
-  const units = db
-    .prepare(
-      `
-    SELECT u.*, a.asset_id AS asset_code
-    FROM units u JOIN assets a ON u.asset_id = a.id ORDER BY a.asset_id, u.unit_number
-  `,
-    )
-    .all();
+  const jobs = (await queryAll(`SELECT * FROM workflow_jobs ORDER BY id`)).map((job) => ({
+    ...job,
+    meta: parseJsonSafe(job.meta),
+    step_label: `Step ${job.step_number}/${job.step_total}`,
+  }));
 
-  const leases = db
-    .prepare(
-      `
-    SELECT l.*, u.unit_number, a.asset_id AS asset_code
-    FROM leases l
-    JOIN units u ON l.unit_id = u.id
-    JOIN assets a ON u.asset_id = a.id
-    ORDER BY l.lease_ended_date DESC
-  `,
-    )
-    .all()
-    .map((row) => ({
-      ...row,
-      custom_clauses: parseJsonSafe(row.custom_clauses),
-    }));
+  const cache = await queryOne(`SELECT * FROM cache_health ORDER BY recorded_at DESC, id DESC LIMIT 1`);
+  const seo = (await queryAll(`SELECT * FROM seo_channels ORDER BY id`)).map((row) => ({
+    ...row,
+    keyword_clusters: parseJsonSafe(row.keyword_clusters) || [],
+  }));
 
-  const jobs = db
-    .prepare(`SELECT * FROM workflow_jobs ORDER BY id`)
-    .all()
-    .map((j) => ({
-      ...j,
-      meta: parseJsonSafe(j.meta),
-      step_label: `Step ${j.step_number}/${j.step_total}`,
-    }));
+  const marketRow = await queryOne(`SELECT * FROM market_snapshots ORDER BY fetched_at DESC, id DESC LIMIT 1`);
+  const demoRow = await queryOne(`SELECT * FROM demographic_snapshots ORDER BY fetched_at DESC, id DESC LIMIT 1`);
 
-  const cache = db.prepare(`SELECT * FROM cache_health ORDER BY id DESC LIMIT 1`).get();
-  const seo = db
-    .prepare(`SELECT * FROM seo_channels ORDER BY id`)
-    .all()
-    .map((s) => ({
-      ...s,
-      keyword_clusters: parseJsonSafe(s.keyword_clusters) || [],
-    }));
-
-  const marketRow = db.prepare(`SELECT * FROM market_snapshots ORDER BY id DESC LIMIT 1`).get();
-  const demoRow = db.prepare(`SELECT * FROM demographic_snapshots ORDER BY id DESC LIMIT 1`).get();
-
-  const [marketLive, demoLive] = await Promise.all([fetchMarketAnalytics(env), fetchDemographics(env)]);
+  const [marketLive, demoLive, crm, screening] = await Promise.all([
+    fetchMarketAnalytics(env),
+    fetchDemographics(env),
+    listCrmPipeline(),
+    listScreeningOverview(),
+  ]);
 
   const market = {
     ...marketRow,
@@ -94,11 +53,7 @@ export async function buildConsolidatedResponse(env) {
 
   return {
     generated_at: new Date().toISOString(),
-    property_management: {
-      assets,
-      units,
-      leases,
-    },
+    property_management: propertyManagement,
     market_analytics: market,
     demographics,
     workflow: {
@@ -110,13 +65,26 @@ export async function buildConsolidatedResponse(env) {
         memory_usage_mb: cache?.memory_usage_mb,
       },
     },
+    crm,
+    screening,
     seo_distribution: seo,
     meta: {
       external_providers: {
         market: "RentCast API (optional key)",
         demographics: "US Census ACS5",
         seo_listings: "Internal + GA/GSC hooks (metrics stored in DB)",
+        crm: "Native pipeline + activity tracking",
+        screening: "Policy-driven applicant review stored in DB",
       },
     },
   };
+}
+
+function parseJsonSafe(value) {
+  if (value == null || value === "") return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
 }

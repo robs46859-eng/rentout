@@ -4,6 +4,8 @@ import { closeDb, execute, migrate, queryOne, resetTable } from "./db.js";
 await migrate();
 
 const tables = [
+  "integration_sync_runs",
+  "integration_accounts",
   "auth_login_challenges",
   "auth_sessions",
   "audit_logs",

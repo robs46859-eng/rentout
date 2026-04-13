@@ -316,6 +316,17 @@
             </div>
 
             <div class="card">
+              <p class="label-sm">PMS integration</p>
+              <p class="metric-sub" id="admin-pms-status">Buildium connection not checked.</p>
+              <p class="metric-sub mono" id="admin-pms-meta">—</p>
+              <div class="toolbar" style="margin: 16px 0 0">
+                <button type="button" class="btn-secondary" id="btn-admin-test-pms">Test Buildium</button>
+                <button type="button" class="btn-primary" id="btn-admin-sync-pms">Run sync</button>
+              </div>
+              <div class="error-banner" id="admin-pms-error" role="alert" hidden></div>
+            </div>
+
+            <div class="card">
               <p class="label-sm">Audit log stream</p>
               <div class="toolbar" style="margin: 16px 0 0">
                 <button type="button" class="btn-secondary" id="btn-admin-refresh-audit">Refresh audit</button>

@@ -427,6 +427,24 @@ function renderAccountState(actor) {
   }
 }
 
+function renderPmsStatus(status) {
+  if (!status) {
+    $("#admin-pms-status").textContent = "Buildium connection not checked.";
+    $("#admin-pms-meta").textContent = "—";
+    return;
+  }
+  const account = status.account || {};
+  $("#admin-pms-status").textContent = `${status.provider} · ${account.status || (status.configured ? "configured" : "disconnected")}`;
+  const lastRun = status.recent_runs?.[0];
+  $("#admin-pms-meta").textContent = [
+    status.configured ? "credentials present" : "credentials missing",
+    account.last_verified_at ? `verified ${new Date(account.last_verified_at).toLocaleString()}` : null,
+    lastRun?.completed_at ? `last sync ${new Date(lastRun.completed_at).toLocaleString()}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ") || "—";
+}
+
 function renderAuditLogs(rows) {
   const tbody = $("#admin-audit-body");
   tbody.replaceChildren();
@@ -541,9 +559,10 @@ function renderOperators(rows) {
 
 async function loadAdminData() {
   if (state.actor?.role !== "admin") return;
-  const [operatorsResponse, auditResponse] = await Promise.all([
+  const [operatorsResponse, auditResponse, pmsResponse] = await Promise.all([
     apiFetch("/api/v1/admin/operators"),
     apiFetch("/api/v1/admin/audit-logs?limit=100"),
+    apiFetch("/api/v1/admin/integrations/pms"),
   ]);
 
   if (!operatorsResponse.ok) {
@@ -554,9 +573,14 @@ async function loadAdminData() {
     const body = await auditResponse.json().catch(() => ({}));
     throw new Error(body.error || `HTTP ${auditResponse.status}`);
   }
+  if (!pmsResponse.ok) {
+    const body = await pmsResponse.json().catch(() => ({}));
+    throw new Error(body.error || `HTTP ${pmsResponse.status}`);
+  }
 
   renderOperators(await operatorsResponse.json());
   renderAuditLogs(await auditResponse.json());
+  renderPmsStatus(await pmsResponse.json());
 }
 
 async function load() {
@@ -809,6 +833,19 @@ async function handleCreateOperator() {
   }
 }
 
+async function handlePmsAction(path, errorTarget) {
+  setBanner(errorTarget);
+  try {
+    const response = await apiFetch(path, { method: "POST" });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || `HTTP ${response.status}`);
+    await loadAdminData();
+    await load();
+  } catch (error) {
+    setBanner(errorTarget, String(error?.message || error));
+  }
+}
+
 $("#btn-refresh").addEventListener("click", () => loadSuite());
 $("#btn-auth-login").addEventListener("click", () => handleLogin());
 $("#btn-auth-mfa-verify").addEventListener("click", () => handleLoginMfaVerify());
@@ -820,6 +857,8 @@ $("#btn-mfa-verify-setup").addEventListener("click", () => handleMfaVerifySetup(
 $("#btn-mfa-disable").addEventListener("click", () => handleMfaDisable());
 $("#btn-admin-create-operator").addEventListener("click", () => handleCreateOperator());
 $("#btn-admin-refresh-audit").addEventListener("click", () => loadAdminData().catch((error) => setBanner("#admin-operator-error", String(error?.message || error))));
+$("#btn-admin-test-pms").addEventListener("click", () => handlePmsAction("/api/v1/admin/integrations/pms/test", "#admin-pms-error"));
+$("#btn-admin-sync-pms").addEventListener("click", () => handlePmsAction("/api/v1/admin/integrations/pms/sync", "#admin-pms-error"));
 
 $("#auth-password").addEventListener("keydown", (event) => {
   if (event.key === "Enter") handleLogin();

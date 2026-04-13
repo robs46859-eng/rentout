@@ -5,6 +5,7 @@ services:
     plan: starter
     buildCommand: npm install
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -33,6 +34,12 @@ services:
       - key: RENTCAST_API_KEY
         sync: false
       - key: CENSUS_API_KEY
+        sync: false
+      - key: BUILDIUM_BASE_URL
+        value: https://api.buildium.com
+      - key: BUILDIUM_CLIENT_ID
+        sync: false
+      - key: BUILDIUM_CLIENT_SECRET
         sync: false
 
 databases:

@@ -20,6 +20,7 @@ It runs as a single Express service with a static dashboard. Local development c
 - property portfolio, units, leases, and work orders
 - CRM prospects, stage movement, and next actions
 - screening policies and applications with stored decisions
+- Buildium PMS connection testing and sync into portfolio tables
 - dual database runtime:
   - SQLite for local dev
   - Postgres for production
@@ -97,6 +98,9 @@ Open `http://127.0.0.1:3847` and sign in with the bootstrap operator.
 | `OPERATOR_BOOTSTRAP_NAME` | Optional display name for the bootstrap admin. |
 | `RENTCAST_API_KEY` | Enables live average-rent pulls. |
 | `CENSUS_API_KEY` | Optional Census key for higher ACS reliability. |
+| `BUILDIUM_BASE_URL` | Buildium API base URL. Default `https://api.buildium.com`. |
+| `BUILDIUM_CLIENT_ID` | Buildium Open API client ID. |
+| `BUILDIUM_CLIENT_SECRET` | Buildium Open API client secret. |
 | `MARKET_ZIP` | ZIP used for RentCast rent lookup. |
 | `MARKET_STATE_FIPS` | Census state FIPS code. |
 | `MARKET_PLACE` | Census place FIPS code. |
@@ -112,6 +116,7 @@ Open `http://127.0.0.1:3847` and sign in with the bootstrap operator.
 - Market: average rent, occupancy proxy, heat score, geography
 - Workflow: job state and cache/system health
 - SEO: listing-channel scorecards and keyword clusters
+- Admin: operator management, audit review, Buildium connection test, PMS sync
 
 ### Core entities
 
@@ -119,6 +124,8 @@ Open `http://127.0.0.1:3847` and sign in with the bootstrap operator.
 - `auth_sessions`
 - `auth_login_challenges`
 - `audit_logs`
+- `integration_accounts`
+- `integration_sync_runs`
 - `assets`
 - `units`
 - `maintenance_snapshots`
@@ -162,6 +169,9 @@ Open `http://127.0.0.1:3847` and sign in with the bootstrap operator.
 | `POST` | `/api/v1/admin/operators` | Create operator | admin |
 | `PATCH` | `/api/v1/admin/operators/:id` | Update operator access and active state | admin |
 | `POST` | `/api/v1/admin/operators/:id/reset-password` | Reset operator password and optionally clear MFA | admin |
+| `GET` | `/api/v1/admin/integrations/pms` | Read Buildium integration status and recent sync runs | admin |
+| `POST` | `/api/v1/admin/integrations/pms/test` | Validate Buildium credentials | admin |
+| `POST` | `/api/v1/admin/integrations/pms/sync` | Import properties, units, leases, and work orders from Buildium | admin |
 | `GET` | `/api/v1/admin/audit-logs` | Read audit trail | admin |
 
 ## Render deployment
@@ -181,11 +191,14 @@ Recommended Render setup:
    - `OPERATOR_BOOTSTRAP_EMAIL`
    - `OPERATOR_BOOTSTRAP_PASSWORD`
    - `MFA_ISSUER`
+   - `BUILDIUM_CLIENT_ID`
+   - `BUILDIUM_CLIENT_SECRET`
 4. Keep `HOST=0.0.0.0`.
 5. Use Postgres in production. Do not run Render on SQLite.
+6. Use the Admin section after first login to test the Buildium connection and run the initial PMS sync.
 
 ## Notes
 
 - `docs/launch-audit.md` captures the current suite audit.
 - This is now a real internal operator auth model with MFA, recovery codes, password rotation, and audited admin controls.
-- It still does not provide customer-facing tenant auth, PMS sync, or external screening vendor integration.
+- It now includes a real Buildium PMS ingestion path, but it still does not provide customer-facing tenant auth or external screening vendor integration.

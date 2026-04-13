@@ -137,6 +137,56 @@ const baseTables = [
     )`,
   },
   {
+    name: "integration_accounts",
+    sqlite: `CREATE TABLE IF NOT EXISTS integration_accounts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      provider TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'disconnected',
+      configuration TEXT,
+      last_verified_at TEXT,
+      last_sync_started_at TEXT,
+      last_sync_completed_at TEXT,
+      last_error TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    )`,
+    postgres: `CREATE TABLE IF NOT EXISTS integration_accounts (
+      id BIGSERIAL PRIMARY KEY,
+      provider TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'disconnected',
+      configuration TEXT,
+      last_verified_at TIMESTAMPTZ,
+      last_sync_started_at TIMESTAMPTZ,
+      last_sync_completed_at TIMESTAMPTZ,
+      last_error TEXT,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    )`,
+  },
+  {
+    name: "integration_sync_runs",
+    sqlite: `CREATE TABLE IF NOT EXISTS integration_sync_runs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      provider TEXT NOT NULL,
+      triggered_by_operator_id INTEGER REFERENCES operators(id) ON DELETE SET NULL,
+      status TEXT NOT NULL DEFAULT 'running',
+      stats TEXT,
+      started_at TEXT DEFAULT (datetime('now')),
+      completed_at TEXT,
+      error_message TEXT
+    )`,
+    postgres: `CREATE TABLE IF NOT EXISTS integration_sync_runs (
+      id BIGSERIAL PRIMARY KEY,
+      provider TEXT NOT NULL,
+      triggered_by_operator_id BIGINT REFERENCES operators(id) ON DELETE SET NULL,
+      status TEXT NOT NULL DEFAULT 'running',
+      stats TEXT,
+      started_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      completed_at TIMESTAMPTZ,
+      error_message TEXT
+    )`,
+  },
+  {
     name: "assets",
     sqlite: `CREATE TABLE IF NOT EXISTS assets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -558,6 +608,9 @@ const columnMigrations = {
   assets: [
     ["manager_name", "TEXT"],
     ["occupancy_target_pct", "REAL DEFAULT 95"],
+    ["pms_provider", "TEXT"],
+    ["pms_external_id", "TEXT"],
+    ["pms_last_synced_at", "TEXT"],
   ],
   units: [
     ["bedrooms", "INTEGER"],
@@ -567,10 +620,18 @@ const columnMigrations = {
     ["status", "TEXT DEFAULT 'vacant'"],
     ["available_on", "TEXT"],
     ["make_ready_progress", "INTEGER DEFAULT 0"],
+    ["pms_external_id", "TEXT"],
+    ["pms_last_synced_at", "TEXT"],
   ],
   leases: [
     ["monthly_rent_cents", "INTEGER"],
     ["deposit_cents", "INTEGER"],
+    ["pms_external_id", "TEXT"],
+    ["pms_last_synced_at", "TEXT"],
+  ],
+  work_orders: [
+    ["pms_external_id", "TEXT"],
+    ["pms_last_synced_at", "TEXT"],
   ],
 };
 

@@ -2,6 +2,7 @@ import { queryAll, queryOne } from "../db.js";
 import { listCrmPipeline } from "./crm.js";
 import { fetchDemographics } from "./demographics.js";
 import { fetchMarketAnalytics } from "./market.js";
+import { getPmsStatus } from "./pms.js";
 import { listPropertyManagement } from "./property.js";
 import { listScreeningOverview } from "./screening.js";
 
@@ -23,11 +24,12 @@ export async function buildConsolidatedResponse(env) {
   const marketRow = await queryOne(`SELECT * FROM market_snapshots ORDER BY fetched_at DESC, id DESC LIMIT 1`);
   const demoRow = await queryOne(`SELECT * FROM demographic_snapshots ORDER BY fetched_at DESC, id DESC LIMIT 1`);
 
-  const [marketLive, demoLive, crm, screening] = await Promise.all([
+  const [marketLive, demoLive, crm, screening, pms] = await Promise.all([
     fetchMarketAnalytics(env),
     fetchDemographics(env),
     listCrmPipeline(),
     listScreeningOverview(),
+    getPmsStatus(env),
   ]);
 
   const market = {
@@ -67,6 +69,9 @@ export async function buildConsolidatedResponse(env) {
     },
     crm,
     screening,
+    integrations: {
+      pms,
+    },
     seo_distribution: seo,
     meta: {
       external_providers: {
@@ -75,6 +80,7 @@ export async function buildConsolidatedResponse(env) {
         seo_listings: "Internal + GA/GSC hooks (metrics stored in DB)",
         crm: "Native pipeline + activity tracking",
         screening: "Policy-driven applicant review stored in DB",
+        pms: "Buildium Open API",
       },
     },
   };

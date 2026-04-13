@@ -8,6 +8,7 @@ import { createAuth } from "./auth.js";
 import { migrate } from "./db.js";
 import { buildConsolidatedResponse } from "./services/consolidated.js";
 import { createProspect, listCrmPipeline, logProspectActivity, updateProspectStage } from "./services/crm.js";
+import { getPmsStatus, syncBuildiumPortfolio, testPmsConnection } from "./services/pms.js";
 import { createWorkOrder, listPropertyManagement, updateWorkOrder } from "./services/property.js";
 import { createScreeningApplication, listScreeningOverview, updateScreeningDecision } from "./services/screening.js";
 
@@ -323,6 +324,48 @@ app.post("/api/v1/admin/operators/:id/reset-password", auth.requireAdmin, async 
   } catch (error) {
     const message = String(error?.message || error);
     res.status(message === "Operator not found" ? 404 : 400).json({ error: message });
+  }
+});
+
+app.get("/api/v1/admin/integrations/pms", auth.requireAdmin, async (_req, res) => {
+  try {
+    res.json(await getPmsStatus(process.env));
+  } catch (error) {
+    res.status(500).json({ error: String(error?.message || error) });
+  }
+});
+
+app.post("/api/v1/admin/integrations/pms/test", auth.requireAdmin, async (req, res) => {
+  try {
+    const result = await testPmsConnection(process.env);
+    await auth.writeAudit({
+      req,
+      actor: req.actor,
+      action: "admin.integration.pms.test",
+      entityType: "integration",
+      entityId: "buildium",
+      payload: result,
+    });
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: String(error?.message || error) });
+  }
+});
+
+app.post("/api/v1/admin/integrations/pms/sync", auth.requireAdmin, async (req, res) => {
+  try {
+    const result = await syncBuildiumPortfolio(process.env, req.actor);
+    await auth.writeAudit({
+      req,
+      actor: req.actor,
+      action: "admin.integration.pms.sync",
+      entityType: "integration",
+      entityId: "buildium",
+      payload: result,
+    });
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: String(error?.message || error) });
   }
 });
 

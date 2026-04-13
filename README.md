@@ -83,6 +83,8 @@ Open `http://127.0.0.1:3847` and sign in with the bootstrap operator.
 
 ## Environment
 
+The canonical source of truth for environment variables is `env.schema.json`. Use the helper scripts in `scripts/` to validate env payloads and sync Render service variables.
+
 | Variable | Purpose |
 | --- | --- |
 | `PORT` | HTTP port. Default `3847`. |
@@ -197,8 +199,26 @@ Recommended Render setup:
 5. Use Postgres in production. Do not run Render on SQLite.
 6. Use the Admin section after first login to test the Buildium connection and run the initial PMS sync.
 
+## Env automation
+
+This repo includes a schema-driven env automation layer:
+
+- `env.schema.json` defines required variables, defaults, and which values sync to Render
+- `npm run env:schema` validates the schema itself
+- `npm run env:validate -- --env staging` validates a concrete env payload
+- `npm run env:sync:render -- --env staging --dry-run` previews Render changes
+- `npm run env:sync:render -- --env staging` applies them
+
+CI automation:
+
+- `.github/workflows/validate-env-schema.yml` validates the schema on push and pull request
+- `.github/workflows/render-env-sync.yml` syncs Render variables from GitHub Environment secrets and vars
+
+See `docs/env-automation.md` for setup details.
+
 ## Notes
 
 - `docs/launch-audit.md` captures the current suite audit.
+- `docs/env-automation.md` documents schema-driven env management and Render sync.
 - This is now a real internal operator auth model with MFA, recovery codes, password rotation, and audited admin controls.
 - It now includes a real Buildium PMS ingestion path, but it still does not provide customer-facing tenant auth or external screening vendor integration.

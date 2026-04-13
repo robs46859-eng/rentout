@@ -21,7 +21,10 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "seed": "node server/seed.js"
+    "seed": "node server/seed.js",
+    "env:schema": "node scripts/validate-env.js --schema-only",
+    "env:validate": "node scripts/validate-env.js",
+    "env:sync:render": "node scripts/sync-render-env.js"
   },
   "engines": {
     "node": ">=18"

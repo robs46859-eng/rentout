@@ -1,0 +1,59 @@
+name: Sync Render Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Schema environment to sync"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      dry_run:
+        description: "Validate and print changes without calling Render"
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_environment }}
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+      PORT: ${{ vars.PORT }}
+      HOST: ${{ vars.HOST }}
+      PGSSL: ${{ vars.PGSSL }}
+      SESSION_TTL_DAYS: ${{ vars.SESSION_TTL_DAYS }}
+      MFA_ISSUER: ${{ vars.MFA_ISSUER }}
+      MFA_CHALLENGE_TTL_MINUTES: ${{ vars.MFA_CHALLENGE_TTL_MINUTES }}
+      OPERATOR_BOOTSTRAP_NAME: ${{ vars.OPERATOR_BOOTSTRAP_NAME }}
+      EXTERNAL_REAL_ESTATE_PROVIDER: ${{ vars.EXTERNAL_REAL_ESTATE_PROVIDER }}
+      BUILDIUM_BASE_URL: ${{ vars.BUILDIUM_BASE_URL }}
+      MARKET_ZIP: ${{ vars.MARKET_ZIP }}
+      MARKET_STATE_FIPS: ${{ vars.MARKET_STATE_FIPS }}
+      MARKET_PLACE: ${{ vars.MARKET_PLACE }}
+      DEMO_RADIUS_MILES: ${{ vars.DEMO_RADIUS_MILES }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      OPERATOR_BOOTSTRAP_EMAIL: ${{ secrets.OPERATOR_BOOTSTRAP_EMAIL }}
+      OPERATOR_BOOTSTRAP_PASSWORD: ${{ secrets.OPERATOR_BOOTSTRAP_PASSWORD }}
+      RENTCAST_API_KEY: ${{ secrets.RENTCAST_API_KEY }}
+      CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+      BUILDIUM_CLIENT_ID: ${{ secrets.BUILDIUM_CLIENT_ID }}
+      BUILDIUM_CLIENT_SECRET: ${{ secrets.BUILDIUM_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate env values
+        run: node scripts/validate-env.js --env "${{ inputs.target_environment }}"
+      - name: Sync Render variables
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            node scripts/sync-render-env.js --env "${{ inputs.target_environment }}" --dry-run
+          else
+            node scripts/sync-render-env.js --env "${{ inputs.target_environment }}"
+          fi

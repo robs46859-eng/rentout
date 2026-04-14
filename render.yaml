@@ -44,6 +44,6 @@ services:
 
 databases:
   - name: rentout-db
-    plan: starter
+    plan: basic-256mb
     databaseName: rentout
     user: rentout

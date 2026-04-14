@@ -603,7 +603,7 @@ const columnMigrations = {
     ["mfa_pending_secret", "TEXT"],
     ["mfa_recovery_codes", "TEXT"],
     ["mfa_pending_recovery_codes", "TEXT"],
-    ["password_changed_at", "TEXT"],
+    ["password_changed_at", "TIMESTAMP"],
   ],
   assets: [
     ["manager_name", "TEXT"],
@@ -649,6 +649,7 @@ function sqliteAlterType(type) {
 
 function postgresAlterType(type) {
   return type
+    .replaceAll("TIMESTAMP", "TIMESTAMPTZ")
     .replaceAll("REAL", "DOUBLE PRECISION")
     .replaceAll("TEXT DEFAULT (datetime('now'))", "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP")
     .replaceAll("TEXT", "TEXT");
@@ -706,6 +707,24 @@ export async function migrate() {
   for (const [tableName, columns] of Object.entries(columnMigrations)) {
     for (const [columnName, columnType] of columns) {
       await addColumnIfMissing(tableName, columnName, columnType);
+    }
+  }
+
+  if (isPostgres) {
+    const passwordChangedAtColumn = await queryOne(
+      `
+        SELECT data_type
+        FROM information_schema.columns
+        WHERE table_name = 'operators' AND column_name = 'password_changed_at'
+      `,
+    );
+
+    if (passwordChangedAtColumn?.data_type === "text") {
+      await execute(`
+        ALTER TABLE operators
+        ALTER COLUMN password_changed_at TYPE TIMESTAMPTZ
+        USING NULLIF(password_changed_at, '')::timestamptz
+      `);
     }
   }
 

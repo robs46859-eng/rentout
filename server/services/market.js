@@ -4,11 +4,11 @@
  */
 
 const FALLBACK = {
-  submarket_id: "DEN-RINO-01",
-  submarket_label: "Denver — RiNo / Five Points",
-  market_avg_rent: 2450,
-  occupancy_avg_pct: 94.2,
-  market_heat_score: 78,
+  submarket_id: "ATL-MIDTOWN-01",
+  submarket_label: "Atlanta — Midtown / Buckhead",
+  market_avg_rent: 2100,
+  occupancy_avg_pct: 95.1,
+  market_heat_score: 82,
   source: "mock",
 };
 

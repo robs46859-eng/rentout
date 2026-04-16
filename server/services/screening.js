@@ -28,12 +28,21 @@ function normalizeApplication(row) {
 }
 
 export async function listScreeningOverview() {
-  const policies = await queryAll(`
-    SELECT *
-    FROM screening_policies
-    WHERE is_active IN (1, TRUE)
-    ORDER BY policy_code
-  `);
+  const policies = await queryAll(
+    `
+      SELECT *
+      FROM screening_policies
+      WHERE is_active IN (1, TRUE)
+      ORDER BY policy_code
+    `,
+    [],
+    `
+      SELECT *
+      FROM screening_policies
+      WHERE is_active = TRUE
+      ORDER BY policy_code
+    `
+  );
 
   const applications = (await queryAll(`
     SELECT

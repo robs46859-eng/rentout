@@ -1,5 +1,8 @@
 /* RentOut — DESIGNMASTER: Industrial Precision & Retro-Futurism */
 
+/* Ensure [hidden] always overrides explicit display rules (e.g. display:grid on .auth-gate) */
+[hidden] { display: none !important; }
+
 :root {
   --surface: #131314;
   --surface-container-low: #1b1b1c;

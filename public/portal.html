@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RentOut — Available Units</title>
+  <meta name="description" content="Browse available units, request a tour, and apply online. Decision returned immediately." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/portal.css" />
+</head>
+<body>
+
+<div class="cursor-dot" id="cursor-dot"></div>
+<div class="cursor-ring" id="cursor-ring"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="/portal.html" class="nav-logo">RENT<span>OUT</span></a>
+  <ul class="nav-links">
+    <li><a href="#listings">Available Units</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
+  </ul>
+  <a href="#listings" class="nav-cta">View Units</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+
+  <div class="hero-badge">// Leasing Now Open</div>
+
+  <h1 class="hero-headline">
+    FIND YOUR<br>
+    <span class="accent-word">NEXT</span><br>
+    <span class="stroke-word">HOME.</span>
+  </h1>
+
+  <p class="hero-sub">
+    Browse <strong>available units</strong> in real time. Request a tour, submit your application,
+    and get a <strong>leasing decision immediately</strong> — no waiting, no callbacks.
+  </p>
+
+  <div class="hero-actions">
+    <a href="#listings" class="btn-primary">Browse Available Units</a>
+    <a href="#how-it-works" class="btn-ghost">How It Works</a>
+  </div>
+
+  <div class="hero-steps">
+    <div class="hero-step">
+      <span class="step-num-sm">01</span>
+      <span class="step-text-sm">Browse Units</span>
+    </div>
+    <div class="hero-step-arrow">→</div>
+    <div class="hero-step">
+      <span class="step-num-sm">02</span>
+      <span class="step-text-sm">Request a Tour</span>
+    </div>
+    <div class="hero-step-arrow">→</div>
+    <div class="hero-step">
+      <span class="step-num-sm">03</span>
+      <span class="step-text-sm">Apply Online</span>
+    </div>
+    <div class="hero-step-arrow">→</div>
+    <div class="hero-step">
+      <span class="step-num-sm">04</span>
+      <span class="step-text-sm">Instant Decision</span>
+    </div>
+  </div>
+</section>
+
+<!-- LISTINGS -->
+<section id="listings" class="listings-section">
+  <div class="listings-inner">
+    <div class="listings-header reveal">
+      <div>
+        <div class="section-label">// Available Now</div>
+        <h2 class="section-title">OPEN UNITS</h2>
+      </div>
+      <div id="listings-count" class="listings-count" style="display:none"></div>
+    </div>
+
+    <!-- Loading -->
+    <div id="listings-loader" class="listings-loader">
+      <div class="loader-bar"></div>
+      <p class="loader-text">Fetching available units...</p>
+    </div>
+
+    <!-- Error -->
+    <div id="listings-error" class="listings-error" style="display:none">
+      <span class="error-icon">!</span>
+      <span id="listings-error-msg">Unable to load listings.</span>
+      <button id="btn-retry" class="btn-retry">Retry</button>
+    </div>
+
+    <!-- Grid -->
+    <div id="listings-grid" class="listings-grid"></div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works" class="how-section">
+  <div class="how-inner">
+    <div class="section-label reveal">// Process</div>
+    <h2 class="section-title reveal">HOW IT<br>WORKS</h2>
+
+    <div class="steps-grid reveal">
+      <div class="step-item">
+        <div class="step-num">01</div>
+        <div class="step-title">Browse Units</div>
+        <p class="step-desc">View real-time availability — beds, baths, square footage, and monthly rent. Filter by what matters to you.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">02</div>
+        <div class="step-title">Request a Tour</div>
+        <p class="step-desc">Select a unit and submit your contact info. Our leasing team will confirm your tour within 24 hours.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">03</div>
+        <div class="step-title">Apply Online</div>
+        <p class="step-desc">Complete the screening form directly in the browser. No paper, no third-party portals.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">04</div>
+        <div class="step-title">Instant Decision</div>
+        <p class="step-desc">Receive an approved, conditional, or denied status immediately — with clear reasons shown on screen.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">RENT<span>OUT</span></div>
+  <ul class="footer-links">
+    <li><a href="#listings">Available Units</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
+  </ul>
+  <div class="footer-copy">© 2026 RentOut</div>
+</footer>
+
+<!-- MODAL OVERLAY -->
+<div id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
+  <div id="modal">
+    <div class="modal-accent-line"></div>
+    <button id="modal-close" class="modal-close" aria-label="Close">
+      <span>×</span>
+    </button>
+    <div id="modal-scroll">
+      <div id="modal-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TEMPLATES ─────────────────────────────────────────────────────────── -->
+
+<!-- Unit card -->
+<template id="tpl-unit-card">
+  <div class="unit-card">
+    <div class="unit-card-top">
+      <div class="unit-num" data-field="unit_number"></div>
+      <span class="unit-status" data-field="status_badge"></span>
+    </div>
+    <div class="unit-property" data-field="asset_name"></div>
+    <div class="unit-stats">
+      <div class="unit-stat">
+        <span class="unit-stat-val" data-field="bedrooms"></span>
+        <span class="unit-stat-label">Bed</span>
+      </div>
+      <div class="unit-stat-div"></div>
+      <div class="unit-stat">
+        <span class="unit-stat-val" data-field="bathrooms"></span>
+        <span class="unit-stat-label">Bath</span>
+      </div>
+      <div class="unit-stat-div"></div>
+      <div class="unit-stat">
+        <span class="unit-stat-val" data-field="square_feet"></span>
+        <span class="unit-stat-label">Sqft</span>
+      </div>
+    </div>
+    <div class="unit-rent">
+      <span data-field="rent"></span><span class="unit-rent-period">/mo</span>
+    </div>
+    <button class="btn-tour">Request a Tour</button>
+  </div>
+</template>
+
+<!-- Modal unit header (prepended to every modal state) -->
+<template id="tpl-modal-header">
+  <div class="modal-unit-header">
+    <span class="modal-unit-num" data-field="unit_number"></span>
+    <span class="modal-unit-detail" data-field="unit_detail"></span>
+  </div>
+</template>
+
+<!-- Intake form -->
+<template id="tpl-intake-form">
+  <div class="modal-section-label">// 01 — Contact Info</div>
+  <h3 class="modal-title" id="modal-title">REQUEST A TOUR</h3>
+  <form id="intake-form" novalidate autocomplete="on">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="f-first">First Name</label>
+        <input class="form-input" id="f-first" name="first_name" type="text"
+          placeholder="Jane" required autocomplete="given-name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f-last">Last Name</label>
+        <input class="form-input" id="f-last" name="last_name" type="text"
+          placeholder="Doe" required autocomplete="family-name" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="f-email">Email</label>
+        <input class="form-input" id="f-email" name="email" type="email"
+          placeholder="jane@example.com" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f-phone">Phone</label>
+        <input class="form-input" id="f-phone" name="phone" type="tel"
+          placeholder="(555) 000-0000" autocomplete="tel" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="f-beds">Desired Bedrooms</label>
+        <select class="form-input" id="f-beds" name="desired_bedrooms">
+          <option value="">Any</option>
+          <option value="0">Studio</option>
+          <option value="1">1 Bedroom</option>
+          <option value="2">2 Bedrooms</option>
+          <option value="3">3 Bedrooms</option>
+          <option value="4">4+ Bedrooms</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f-movein">Desired Move-In</label>
+        <input class="form-input" id="f-movein" name="desired_move_in" type="date" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="f-budget">Monthly Budget ($)</label>
+      <input class="form-input" id="f-budget" name="budget_monthly" type="number"
+        placeholder="2500" min="0" step="50" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="f-notes">
+        Notes <span class="form-optional">(optional)</span>
+      </label>
+      <textarea class="form-input form-textarea" id="f-notes" name="notes"
+        placeholder="Questions or preferences…"></textarea>
+    </div>
+    <div id="intake-error" class="form-error" style="display:none" role="alert"></div>
+    <div class="form-actions">
+      <button type="submit" class="btn-primary-modal" id="btn-intake-submit">
+        <span id="intake-btn-text">Submit Request</span>
+        <span id="intake-btn-loader" class="btn-loader" style="display:none" aria-hidden="true"></span>
+      </button>
+    </div>
+  </form>
+</template>
+
+<!-- Intake success -->
+<template id="tpl-intake-success">
+  <div class="intake-success">
+    <div class="success-icon" aria-hidden="true">✓</div>
+    <h3 class="modal-title">REQUEST RECEIVED</h3>
+    <p class="success-sub">
+      Your tour request has been logged.
+      Our leasing team will be in touch shortly.
+    </p>
+    <div class="success-divider"></div>
+    <p class="success-apply-prompt">
+      Ready to move forward? Submit a full application for this unit —
+      you'll receive a decision immediately.
+    </p>
+    <button class="btn-primary-modal" id="btn-open-apply">Apply for This Unit</button>
+  </div>
+</template>
+
+<!-- Apply form -->
+<template id="tpl-apply-form">
+  <div class="modal-section-label">// 02 — Screening Application</div>
+  <h3 class="modal-title" id="modal-title">APPLY NOW</h3>
+  <p class="apply-sub">
+    Complete the form below. A leasing decision is returned immediately upon submission.
+  </p>
+  <form id="apply-form" novalidate autocomplete="on">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="a-credit">Credit Score</label>
+        <input class="form-input" id="a-credit" name="credit_score" type="number"
+          placeholder="680" min="300" max="850" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="a-income">Gross Monthly Income ($)</label>
+        <input class="form-input" id="a-income" name="gross_monthly_income" type="number"
+          placeholder="5000" min="0" step="100" required />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="a-collections">Open Collections</label>
+        <input class="form-input" id="a-collections" name="open_collections" type="number"
+          placeholder="0" min="0" value="0" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="a-occupants">Total Occupants</label>
+        <input class="form-input" id="a-occupants" name="occupants_count" type="number"
+          placeholder="1" min="1" value="1" required />
+      </div>
+    </div>
+    <div class="form-checks">
+      <label class="form-check">
+        <input type="checkbox" id="a-eviction" name="has_eviction" />
+        <span class="check-box"></span>
+        <span class="check-label">I have a prior eviction on record</span>
+      </label>
+      <label class="form-check">
+        <input type="checkbox" id="a-felony" name="has_felony" />
+        <span class="check-box"></span>
+        <span class="check-label">I have a felony on record</span>
+      </label>
+      <label class="form-check">
+        <input type="checkbox" id="a-identity" name="identity_verified" />
+        <span class="check-box"></span>
+        <span class="check-label">Identity documents provided and verified</span>
+      </label>
+      <label class="form-check">
+        <input type="checkbox" id="a-income-docs" name="income_docs_verified" />
+        <span class="check-box"></span>
+        <span class="check-label">Income documents provided and verified</span>
+      </label>
+    </div>
+    <div id="apply-error" class="form-error" style="display:none" role="alert"></div>
+    <div class="form-actions">
+      <button type="submit" class="btn-primary-modal" id="btn-apply-submit">
+        <span id="apply-btn-text">Submit Application</span>
+        <span id="apply-btn-loader" class="btn-loader" style="display:none" aria-hidden="true"></span>
+      </button>
+    </div>
+    <p class="apply-legal">
+      By submitting, you authorize a background and credit check.
+      All information is kept strictly confidential.
+    </p>
+  </form>
+</template>
+
+<!-- Decision result -->
+<template id="tpl-decision">
+  <div class="decision-result" id="decision-result">
+    <div class="decision-badge" data-field="decision-label"></div>
+    <p class="decision-sub" data-field="decision-sub"></p>
+    <div class="decision-reasons-wrap" id="decision-reasons-wrap" style="display:none">
+      <div class="modal-section-label">// Details</div>
+      <ul class="decision-reasons" id="decision-reasons-list"></ul>
+    </div>
+    <p class="decision-unit" data-field="decision-unit"></p>
+    <button class="btn-ghost-modal" id="btn-close-decision">Close</button>
+  </div>
+</template>
+
+<script src="/js/portal.js"></script>
+</body>
+</html>

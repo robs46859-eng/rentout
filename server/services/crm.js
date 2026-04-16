@@ -184,6 +184,14 @@ export async function createProspect(input) {
   );
 
   const id = result.lastInsertRowid || result.rows?.[0]?.id;
+
+  // Auto-log intake activity
+  await execute(
+    `INSERT INTO crm_activities (prospect_id, activity_type, status, owner, summary) VALUES (?, ?, ?, ?, ?)`,
+    [Number(id), "intake", "done", input.assigned_agent || null, `Prospect created via ${input.source || "manual"}`],
+    `INSERT INTO crm_activities (prospect_id, activity_type, status, owner, summary) VALUES ($1, $2, $3, $4, $5)`,
+  );
+
   return getProspectById(Number(id));
 }
 
@@ -264,6 +272,26 @@ export async function updateProspectStage(prospectId, input) {
   );
 
   return getProspectById(prospectId);
+}
+
+// Called by screening automation to move stage and log activity after a decision
+export async function applyScreeningOutcome(prospectId, decision) {
+  const stageMap = { approved: "Approved", conditional: "Approved", denied: "Closed Lost" };
+  const targetStage = stageMap[decision];
+  if (!targetStage) return;
+  const prospect = await getProspectById(prospectId);
+  if (!prospect) return;
+
+  await execute(
+    `UPDATE crm_prospects SET stage = ?, application_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+    [targetStage, decision, prospectId],
+    `UPDATE crm_prospects SET stage = $1, application_status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3`,
+  );
+  await execute(
+    `INSERT INTO crm_activities (prospect_id, activity_type, status, owner, summary) VALUES (?, ?, ?, ?, ?)`,
+    [prospectId, "screening_decision", "done", "system", `Auto-decision: ${decision}`],
+    `INSERT INTO crm_activities (prospect_id, activity_type, status, owner, summary) VALUES ($1, $2, $3, $4, $5)`,
+  );
 }
 
 export async function getProspectById(prospectId) {

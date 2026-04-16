@@ -1,4 +1,45 @@
 import { execute, queryAll, queryOne } from "../db.js";
+import { applyScreeningOutcome } from "./crm.js";
+
+// Deterministic policy evaluation — returns { decision, reasons }
+function evaluatePolicy(input, policy, unit) {
+  const reasons = [];
+  let conditional = false;
+
+  const credit = Number(input.credit_score ?? 0);
+  const minCredit = Number(policy?.min_credit_score ?? 0);
+  if (minCredit > 0 && credit < minCredit) {
+    reasons.push(`Credit score ${credit} below minimum ${minCredit}`);
+  }
+
+  const rentCents = Number(unit?.market_rent_cents ?? 0);
+  const incomeCents = Number(input.gross_monthly_income_cents ?? input.gross_monthly_income != null ? Math.round(Number(input.gross_monthly_income) * 100) : 0);
+  const minRatio = Number(policy?.min_income_rent_ratio ?? 0);
+  if (minRatio > 0 && rentCents > 0 && incomeCents / rentCents < minRatio) {
+    reasons.push(`Income ratio ${(incomeCents / rentCents).toFixed(2)} below minimum ${minRatio}`);
+  }
+
+  const collections = Number(input.open_collections_cents ?? (input.open_collections != null ? Math.round(Number(input.open_collections) * 100) : 0));
+  const maxCollections = Number(policy?.max_open_collections_cents ?? Infinity);
+  if (collections > maxCollections) {
+    reasons.push(`Open collections $${(collections / 100).toFixed(2)} exceeds max $${(maxCollections / 100).toFixed(2)}`);
+  }
+
+  if (input.has_eviction) reasons.push("Eviction on record");
+  if (input.has_felony) reasons.push("Felony on record");
+
+  if (policy?.requires_identity_pass && !input.identity_verified) {
+    reasons.push("Identity verification required");
+  }
+
+  if (policy?.require_income_docs && !input.income_docs_verified) {
+    conditional = true;
+  }
+
+  if (reasons.length > 0) return { decision: "denied", reasons };
+  if (conditional) return { decision: "conditional", reasons: ["Income documents pending verification"] };
+  return { decision: "approved", reasons: ["All policy criteria met"] };
+}
 
 const screeningDecisions = new Set(["pending", "approved", "conditional", "denied"]);
 
@@ -97,12 +138,27 @@ export async function createScreeningApplication(input) {
     throw new Error("prospect_id is required");
   }
 
-  const decision = String(input.decision || "pending").trim().toLowerCase();
+  // Load policy and unit for auto-decision
+  const policy = input.policy_id
+    ? await queryOne(`SELECT * FROM screening_policies WHERE id = ?`, [input.policy_id], `SELECT * FROM screening_policies WHERE id = $1`)
+    : null;
+  const unit = input.unit_id
+    ? await queryOne(`SELECT * FROM units WHERE id = ?`, [input.unit_id], `SELECT * FROM units WHERE id = $1`)
+    : null;
+
+  // Auto-run policy evaluation unless caller explicitly passes a decision
+  const incomeCents = input.gross_monthly_income_cents ?? (input.gross_monthly_income != null ? Math.round(Number(input.gross_monthly_income) * 100) : null);
+  const autoResult = evaluatePolicy({ ...input, gross_monthly_income_cents: incomeCents }, policy, unit);
+  const decision = input.decision && input.decision !== "pending" ? String(input.decision).trim().toLowerCase() : autoResult.decision;
+  const decisionReasons = Array.isArray(input.decision_reasons) && input.decision_reasons.length > 0
+    ? input.decision_reasons
+    : autoResult.reasons;
+
   if (!screeningDecisions.has(decision)) {
     throw new Error("Invalid screening decision");
   }
 
-  const reasons = Array.isArray(input.decision_reasons) ? JSON.stringify(input.decision_reasons) : null;
+  const reasons = JSON.stringify(decisionReasons);
 
   const result = await execute(
     `
@@ -126,7 +182,7 @@ export async function createScreeningApplication(input) {
       input.income_docs_verified ? 1 : 0,
       decision,
       reasons,
-      decision === "pending" ? null : new Date().toISOString(),
+      new Date().toISOString(),
     ],
     `
       INSERT INTO screening_applications (
@@ -139,6 +195,10 @@ export async function createScreeningApplication(input) {
   );
 
   const id = result.lastInsertRowid || result.rows?.[0]?.id;
+
+  // Auto-advance CRM stage based on decision
+  await applyScreeningOutcome(Number(input.prospect_id), decision);
+
   return getScreeningApplicationById(Number(id));
 }
 

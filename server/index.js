@@ -377,6 +377,50 @@ app.get("/api/v1/admin/audit-logs", auth.requireAdmin, async (req, res) => {
   }
 });
 
+// ── Public endpoints (no auth) — called by the renter-facing domain ─────────
+
+// Available units for listing page
+app.get("/api/public/listings", async (_req, res) => {
+  try {
+    const { units } = await listPropertyManagement();
+    const available = units.filter((u) => ["vacant", "make_ready", "notice"].includes(u.status));
+    res.json({ ok: true, listings: available });
+  } catch (error) {
+    res.status(500).json({ error: String(error?.message || error) });
+  }
+});
+
+// Renter intake form → creates CRM prospect as Lead + auto-logs intake activity
+app.post("/api/public/intake", async (req, res) => {
+  try {
+    const prospect = await createProspect({
+      ...req.body,
+      source: "renter_portal",
+      stage: "Lead",
+    });
+    res.status(201).json({ ok: true, prospect_id: prospect.prospect_id, id: prospect.id });
+  } catch (error) {
+    res.status(400).json({ error: String(error?.message || error) });
+  }
+});
+
+// Renter application → creates screening app + auto-decision + auto-advances CRM stage
+app.post("/api/public/apply", async (req, res) => {
+  try {
+    const application = await createScreeningApplication({
+      ...req.body,
+      source: "renter_portal",
+    });
+    // Also move prospect to Application Submitted before decision runs
+    if (req.body.prospect_id) {
+      await updateProspectStage(Number(req.body.prospect_id), { stage: "Application Submitted" });
+    }
+    res.status(201).json({ ok: true, application });
+  } catch (error) {
+    res.status(400).json({ error: String(error?.message || error) });
+  }
+});
+
 app.use(express.static(publicDir));
 
 app.listen(port, host, () => {

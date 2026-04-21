@@ -1,0 +1,7 @@
+Demographic source: ACS 5-year summary
+Place name: Denver city, Colorado
+Radius miles: 3
+Average household income: 98500
+Vacancy rate percent: 5.8
+Source type: census_acs5
+Source label: Imported ACS summary

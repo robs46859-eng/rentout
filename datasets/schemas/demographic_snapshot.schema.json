@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RentOut Demographic Snapshot",
+  "type": "object",
+  "required": ["demographic_snapshots"],
+  "properties": {
+    "demographic_snapshots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "radius_miles",
+          "average_hhi",
+          "vacancy_rate_pct",
+          "source",
+          "place_name",
+          "_meta"
+        ],
+        "properties": {
+          "radius_miles": { "type": ["number", "null"] },
+          "average_hhi": { "type": ["number", "null"] },
+          "vacancy_rate_pct": { "type": ["number", "null"] },
+          "source": { "type": "string" },
+          "place_name": { "type": ["string", "null"] },
+          "_meta": {
+            "type": "object",
+            "required": [
+              "source_url",
+              "source_title",
+              "source_date",
+              "evidence",
+              "confidence"
+            ],
+            "properties": {
+              "source_url": { "type": "string" },
+              "source_title": { "type": "string" },
+              "source_date": { "type": ["string", "null"] },
+              "evidence": { "type": "string" },
+              "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

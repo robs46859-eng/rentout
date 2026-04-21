@@ -1,0 +1,22 @@
+{
+  "seo_channels": [
+    {
+      "channel_name": "Google Business Profile",
+      "local_seo_score": 91,
+      "distribution_pct": 44,
+      "listing_completeness": 98,
+      "keyword_clusters": [
+        "apartments downtown denver",
+        "pet friendly rentals denver",
+        "denver leasing office"
+      ],
+      "_meta": {
+        "source_url": "",
+        "source_title": "Internal SEO worksheet",
+        "source_date": null,
+        "evidence": "SEO listing scorecard",
+        "confidence": 1
+      }
+    }
+  ]
+}

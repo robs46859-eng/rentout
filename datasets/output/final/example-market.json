@@ -1,0 +1,19 @@
+{
+  "market_snapshots": [
+    {
+      "submarket_id": "ZIP-80202",
+      "submarket_label": "ZIP 80202 - RentCast",
+      "market_avg_rent": 2415,
+      "occupancy_avg_pct": 94.2,
+      "market_heat_score": 79,
+      "source": "rentcast",
+      "_meta": {
+        "source_url": "",
+        "source_title": "Internal imported market response",
+        "source_date": null,
+        "evidence": "RentCast average rent snapshot",
+        "confidence": 0.9
+      }
+    }
+  ]
+}

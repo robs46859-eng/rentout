@@ -1,0 +1,15 @@
+Entity type: market_snapshots
+Name: Denver city, Colorado
+Title: Manual market source template
+URL: 
+Fetched at: 2026-04-21T23:51:47.203Z
+
+Market source: public report or API response
+Geography: ZIP 80202
+Submarket id: ZIP-80202
+Submarket label: ZIP 80202
+Average rent for 2-bedroom units: 
+Occupancy average percent: 
+Market heat score: 
+Source type: 
+Source label: Manual market source

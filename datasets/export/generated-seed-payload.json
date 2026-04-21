@@ -1,0 +1,35 @@
+{
+  "generated_at": "2026-04-21T23:54:42.375Z",
+  "market_snapshots": [
+    {
+      "submarket_id": "ZIP-80202",
+      "submarket_label": "ZIP 80202 - RentCast",
+      "market_avg_rent": 2415,
+      "occupancy_avg_pct": 94.2,
+      "market_heat_score": 79,
+      "source": "rentcast"
+    }
+  ],
+  "demographic_snapshots": [
+    {
+      "radius_miles": 3,
+      "average_hhi": 98500,
+      "vacancy_rate_pct": 5.8,
+      "source": "census_acs5",
+      "place_name": "Denver city, Colorado"
+    }
+  ],
+  "seo_channels": [
+    {
+      "channel_name": "Google Business Profile",
+      "local_seo_score": 91,
+      "distribution_pct": 44,
+      "listing_completeness": 98,
+      "keyword_clusters": [
+        "apartments downtown denver",
+        "pet friendly rentals denver",
+        "denver leasing office"
+      ]
+    }
+  ]
+}

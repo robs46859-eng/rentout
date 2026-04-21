@@ -1,0 +1,9 @@
+Market source: RentCast average rent snapshot
+Geography: ZIP 80202
+Submarket id: ZIP-80202
+Submarket label: ZIP 80202 - RentCast
+Average rent for 2-bedroom units: 2415
+Occupancy average percent: 94.2
+Market heat score: 79
+Source type: rentcast
+Source label: Internal imported market response

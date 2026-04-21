@@ -1,0 +1,19 @@
+{
+  "dataset_name": "rentout-market-pack",
+  "target_market": {
+    "zip": "80202",
+    "state_fips": "08",
+    "place_fips": "20000"
+  },
+  "tables": [
+    "market_snapshots",
+    "demographic_snapshots",
+    "seo_channels"
+  ],
+  "required_source_fields": [
+    "source_url",
+    "source_title",
+    "evidence"
+  ],
+  "notes": "Keep model runs table-specific. Do not ask one small model prompt to build the entire dashboard payload."
+}

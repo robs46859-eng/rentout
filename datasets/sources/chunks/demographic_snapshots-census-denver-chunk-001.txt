@@ -1,0 +1,7 @@
+Entity type: demographic_snapshots
+Name: Denver city, Colorado
+Title: US Census ACS 5-Year
+URL: https://api.census.gov/data/2022/acs/acs5?get=NAME,B19013_001E,B25001_001E,B25004_001E&for=place:20000&in=state:08
+Fetched at: 2026-04-21T23:51:47.202Z
+
+Demographic source: ACS 5-year summary Place name: Denver city, Colorado Radius miles: 3 Average household income: 85853 Total housing units: 344760 Vacant housing units: 21796 Vacancy rate percent: 6.3 Source type: census_acs5 Source label: Imported ACS summary

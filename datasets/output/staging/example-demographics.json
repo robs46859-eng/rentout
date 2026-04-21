@@ -1,0 +1,18 @@
+{
+  "demographic_snapshots": [
+    {
+      "radius_miles": null,
+      "average_hhi": null,
+      "vacancy_rate_pct": null,
+      "source": "census_acs5",
+      "place_name": "Denver city, Colorado",
+      "_meta": {
+        "source_url": "",
+        "source_title": "",
+        "source_date": null,
+        "evidence": "Imported ACS summary with radius of 3 miles and vacancy rate of 5.8%",
+        "confidence": 0.9
+      }
+    }
+  ]
+}
